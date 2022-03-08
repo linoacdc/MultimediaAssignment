@@ -1,26 +1,15 @@
 
 t = 1.25*10^-4:1.25*10^-4:0.02;
 s0=sin(100000*t)+sin(5000*t);
-
-PrevFrmSTResd =sin(1000*t);
+PrevFrmSTResd =zeros(160,1);
 [LARc,Nc,bc,CurrFrmExFull,CurrFrmSTResd] = RPE_frame_SLT_coder(s0,PrevFrmSTResd);
-
-d1 = CurrFrmSTResd;
-
+LARc,Nc,bc,CurrFrmExFull,CurrFrmSTResd;
 [s,CurrFrmSTResd]= RPE_frame_SLT_decoder(LARc,Nc,bc,CurrFrmExFull,PrevFrmSTResd);
-
-d2 = CurrFrmSTResd;
-figure(1);
-plot(s)
-figure(2);
-plot(s0);
-
-%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+s,CurrFrmSTResd
 
 function [LARc,Nc,bc,CurrFrmExFull,CurrFrmSTResd] = RPE_frame_SLT_coder(s0,PrevFrmSTResd)
 
- 
+
 %%%%%%%%%%%%%%%%%%%
 %PREPROCESSING%
 alpha = 32735*2^-15;
@@ -153,16 +142,11 @@ for n=1:160
     end
 end
 
-figure(3);
-plot(sDec);
-%Calculate difference between s and sDec
-
+%Calculate difference between s and sDec, I dont use this
  d1=s-sDec;
  
-
 %Calculate difference based on formula of the standard given, this is 
 %what I use
-
 ui=zeros(160,9);
 di = zeros(160,9);
 
@@ -171,19 +155,17 @@ for i = 1:9
     ui(1,i)=s(1);        
 end
 
-
  for k=2:160
      di(k,1)=s(k);
      ui(k,1)=s(k);
-     
      for i=2:9
              di(k,i) = di(k,i-1) + rDec(i-1)*ui(k-1,i-1);
              ui(k,i) = ui(k-1,i-1) + rDec(i-1) * di(k,i-1);
      end
  end
  
+%Short term analysis residual
 d2=di(:,9);
-
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -209,11 +191,10 @@ for j = 0:3
     
     count = 0;
     d = d2(1+j*40:j*40+40);
-    
+
     %Setting up Prevd and d for each subframe to use for RPE_subframe
     %function
     for i = 3:-1:1
-        
         if (j*40 + 1 - i*40 <= 0)
             PrevFrmSTResd(j*40 + 1 - i*40 +160: j*40 - i*40 + 40 + 160)=dReconCurrent(1:40);
             Prevd(count*40 + 1:count*40 + 40) = dReconCurrent(1:40);
@@ -238,12 +219,9 @@ for j = 0:3
             bc(j+1) = 3;
         end
     
- 
-    
     %Decode N, b
     Ndec(j+1) = N(j+1);
     bdec(j+1) = QLB(bc(j+1)+1);
-    
     
     %Calculate d'' like in the assignment presentation d'' = bc*d'(n-Nc)
     dEst(1:40) = bc(j+1) * Prevd(120 - Nc(j+1) + 1: 120 - Nc(j+1) +40);
@@ -256,19 +234,7 @@ for j = 0:3
     dRecon(j*40 +1: j*40 + 40) = e(j*40 +1: j*40 + 40) + bdec(j+1) * Prevd(120 - Ndec(j+1) + 1: 120 - Ndec(j+1) +40);
     
 end
-
-
-
-
-
-% %Calculating d''
-% d3 = zeros(160,1);
-% for j = 0:3
-%     d3(j*40+1:j*40+40) = bdec(j) * Prevd(j*40 + 1 - Ndec: j*40 + 40 - Ndec);
-% end 
-% for n =1:160
-%     e(n) = d2(n) - d3(n);
-% end     
+ 
 CurrFrmSTResd = dRecon;
 CurrFrmExFull = e;
 
@@ -279,22 +245,19 @@ function [s0, CurrFrmSTResd] = RPE_frame_SLT_decoder(LARc,Nc,bc,CurrFrmExFull, P
 %%%Initialize some values
 bdec = zeros(4,1);
 Ndec = zeros(4,1);
-e = transpose(CurrFrmExFull);
+e = (CurrFrmExFull);
 QLB = [0.1, 0.35, 0.65, 1.0];
 d = zeros(160,1);
 Prevd = PrevFrmSTResd(41:160);
 
 %Calculate d' per subframe from d?(n) = e?(n) + b?d?(n-N')
 for j = 0:3
-    
-    
+   
     %Decode N,b
     Ndec(j+1) = Nc(j+1);
     bdec(j+1) = QLB(bc(j+1)+1);
     
     %Calculate d for subframe
-    
-    
     d(40*j + 1 :40*j + 40) = e(40*j + 1 :40*j + 40) + bdec(j+1) * Prevd(120 - Ndec(j+1) + 1: 120 - Ndec(j+1) +40);
     
     %Change Prevd to match the next subframe
@@ -358,6 +321,7 @@ end
 
 s0 = zeros(160,1);
 s0(1)=s(1);
+
 %Postprocessing
 for k = 2:160
     s0(k) = s(k) + 28180*2^(-15) * s(k-1);
@@ -370,7 +334,7 @@ function [N,b] = RPE_subframe_LTE(d, Prevd )
 
 sumLambda = zeros(81,1);
 
-
+%Calculating all cross-correlations
 for lambda = 40:120
     for i = 1:40
         sumLambda(lambda-39) = sumLambda(lambda-39) + Prevd(120-lambda+i)*d(i);
@@ -380,6 +344,8 @@ end
 max= sumLambda(1);
 N=40;
 
+%Find the largest and store the index for that ( add 39 so it matches with
+%N)
 for i =2:81
     if (sumLambda(i)>=max)
         max = sumLambda(i);
@@ -390,6 +356,7 @@ end
 sum1=0;
 sum2=0;
 
+%Calculate the two sums needed to calculate b
 for i = 1:40
     sum1 = sum1 + d(i)*Prevd(120 + i - N);
     sum2 = sum2 + (Prevd(120 + i - N)^2);

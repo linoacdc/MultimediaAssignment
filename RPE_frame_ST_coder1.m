@@ -1,22 +1,17 @@
 
-% t = 1.25*10^-4:1.25*10^-4:0.02;
-% s0=sin(1000*t)+sin(500*t);
-% 
-% 
-%  [LARci,CurrFrmSTResd] = RPE_frame_ST_coder(s0);
-%  
-%  
-%   [s]= RPE_frame_ST_decoder(LARci,CurrFrmSTResd);
-%  figure(1);
-%  plot(s0);
-%  figure(2);
-%  plot(s);
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+t = 1.25*10^-4:1.25*10^-4:0.02;
+s0=sin(100000*t)+sin(5000*t)+sin(4000*t)+sin(200*t);
+
+
+[LARci,CurrFrmSTResd] = RPE_frame_ST_coder(s0);
+LARci,CurrFrmSTResd
+[s]= RPE_frame_ST_decoder(LARci,CurrFrmSTResd);
+s
 
 function [LARc,CurrFrmSTResd] = RPE_frame_ST_coder(s0)
 
  
-%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %PREPROCESSING%
 alpha = 32735*2^-15;
 beta = 28180*2^-15;
@@ -33,7 +28,7 @@ for k = 2:160
     s(k) = s(k) - beta*s(k-1);
     
 end
-%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %SHORT TERM ANALYSIS
 
 %Calculate estimation of autocorrelation values r=ACF
@@ -69,7 +64,6 @@ a(2:9)=-w(1:8);
 
 
 %Use poly2rc to get reflection coefficients kr
-
 kr=poly2rc(a);
 
 %Check and make sure max values are within (-1,1)
@@ -111,13 +105,6 @@ for i = 1:8
     end
 end
 
-
-
-
-%%Calculate s' and d
-%s^(n)=Sum(ak*s(n-k))
-
-
 %Calculate decoded LAR (LARc->LARdec)
 for i=1:8
     LARdec(i)=( (LARc(i)) - B(i) ) / A(i);
@@ -136,14 +123,10 @@ for i=1:8
 end
 
 %Calculate coefficients from reflection coefficients
-
 aDec = rc2poly(rDec);
-
-
 sDec = zeros(1,160);
 
 %Calcualte decoded signal from formula
-
 for n=1:160
     for k=1:8
         if n>=k
@@ -155,9 +138,6 @@ end
 %Calculate difference between s and sDec
 
  d1=s-sDec;
- 
-
-
 
 ui=zeros(160,9);
 di = zeros(160,9);
@@ -166,7 +146,6 @@ for i = 1:9
     di(1,i)=s(1);
     ui(1,i)=s(1);        
 end
-
 
  for k=2:160
      di(k,1)=s(k);
@@ -179,45 +158,12 @@ end
  end
 d2=di(:,9);
 CurrFrmSTResd=d2;
-figure(1);
-plot(s)
-figure(2);
-plot(sDec);
-% figure(3);
-% plot(d1)
-% figure(4);
-% plot(d2)
 
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%LONG TERM ANALYSIS
-% syms lamda
-% assume(in(lambda,'integer') & lambda >= 40 & lambda <=120)
-% 
-% 
-% for j = 0:3
-%     
-%     R_lambda = symsum(d1(j*40+i)*d1(j*40+i-lambda),i,1,40);
-% 
-% end
-% 
-
-
-
-
-
-
-
-
-
-% 
-% 
-%      end
-%  end
 end
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 function [s0] = RPE_frame_ST_decoder(LARc,CurrFrmSTResd)
 
+%Decode LAR
 A =  [20, 20, 20, 20, 13.637, 15, 8.334, 8.824];
 B =  [0, 0, 4, -5, 0.184, -3.5, -0.666, -2.235];
 MinLar = [-32, -32, -16, -16, -8, -8, -4, -4];
@@ -227,6 +173,7 @@ for i=1:8
     LARdec(i)=( (LARc(i)) - B(i) ) / A(i);
 end
 
+%Calculate rDec from LARdec
 for i=1:8
     if abs(LARdec(i)) <= 1.625 && abs(LARdec(i)) >= 1.225
         rDec(i)=sign(LARdec(i)) * (0.125*abs(LARdec(i)) + 0.796875);
@@ -237,25 +184,15 @@ for i=1:8
     end
 end
 
+%Calculate aDec
 aDec = rc2poly(rDec)
-
-%  syms z;
-%  
-% mySum=0;
-% for k =1:8
-%     
-%     mySum=mySum+z^(-k)*aDec(k);
-% 
-% end
-% mySum
-
 
 s = zeros(160,1);
 sr = zeros(160,9);
 v = zeros(160,9);
 
 d = transpose(CurrFrmSTResd);
-
+%Calculate s from rDec and current d
 for i = 1:9
     sr(1,i)=d(1);  
 end
@@ -274,7 +211,7 @@ for k = 2:160
     v(1,k) = sr(k,9);
 end
 
-sr
+%Postprocessing
 s0 = zeros(160,1);
 
 s0(1)=s(1);
@@ -282,14 +219,8 @@ for k = 2:160
     s0(k) = s(k) + 28180*2^(-15) * s(k-1);
 
 end
-figure(5);
-plot(s0);
-
 end
 
 function zrounded = Nint(z)
-    
-    %zrounded = int16(z+sign(z)*0.5);
     zrounded = round(z);
-
 end
