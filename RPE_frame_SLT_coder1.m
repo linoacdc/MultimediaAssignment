@@ -1,11 +1,16 @@
 
 t = 1.25*10^-4:1.25*10^-4:0.02;
-s0=sin(100000*t)+sin(5000*t);
+s0=sin(1000*t)+0.5*sin(5000*t)+0.7*sin(4000*t)+sin(200*t);
+figure(1);
+plot(s0);
+title('s0');
 PrevFrmSTResd =zeros(160,1);
 [LARc,Nc,bc,CurrFrmExFull,CurrFrmSTResd] = RPE_frame_SLT_coder(s0,PrevFrmSTResd);
 LARc,Nc,bc,CurrFrmExFull,CurrFrmSTResd;
 [s,CurrFrmSTResd]= RPE_frame_SLT_decoder(LARc,Nc,bc,CurrFrmExFull,PrevFrmSTResd);
-s,CurrFrmSTResd
+figure(2);
+plot(s);
+title('s');
 
 function [LARc,Nc,bc,CurrFrmExFull,CurrFrmSTResd] = RPE_frame_SLT_coder(s0,PrevFrmSTResd)
 

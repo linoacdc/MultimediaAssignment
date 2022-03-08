@@ -1,12 +1,16 @@
 
 t = 1.25*10^-4:1.25*10^-4:0.02;
-s0=sin(100000*t)+sin(5000*t)+sin(4000*t)+sin(200*t);
-
+s0=sin(1000*t)+0.5*sin(5000*t)+0.7*sin(4000*t)+sin(200*t);
+figure(1);
+plot(s0);
+title('s0');
 
 [LARci,CurrFrmSTResd] = RPE_frame_ST_coder(s0);
 LARci,CurrFrmSTResd
 [s]= RPE_frame_ST_decoder(LARci,CurrFrmSTResd);
-s
+figure(2);
+plot(s);
+title('s');
 
 function [LARc,CurrFrmSTResd] = RPE_frame_ST_coder(s0)
 
